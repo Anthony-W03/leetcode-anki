@@ -51,6 +51,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output-file", type=str, help="Output filename", default=OUTPUT_FILE
     )
+    parser.add_argument(
+        "--favorite-slug",
+        type=str,
+        help="Get all questions from a company favorite list ()",
+        default="",
+    )
 
     args = parser.parse_args()
 
@@ -107,7 +113,7 @@ async def generate_anki_note(
 
 
 async def generate(
-    start: int, stop: int, page_size: int, list_id: str, output_file: str
+    start: int, stop: int, page_size: int, list_id: str, favorite_slug:str, output_file: str
 ) -> None:
     """
     Generate an Anki deck
@@ -176,7 +182,7 @@ async def generate(
     leetcode_deck = genanki.Deck(LEETCODE_ANKI_DECK_ID, Path(output_file).stem)
 
     leetcode_data = leetcode_anki.helpers.leetcode.LeetcodeData(
-        start, stop, page_size, list_id
+        start, stop, page_size, list_id, favorite_slug
     )
 
     note_generators: List[Awaitable[LeetcodeNote]] = []
@@ -201,14 +207,15 @@ async def main() -> None:
     """
     args = parse_args()
 
-    start, stop, page_size, list_id, output_file = (
+    start, stop, page_size, list_id, favorite_slug, output_file = (
         args.start,
         args.stop,
         args.page_size,
         args.list_id,
+        args.favorite_slug,
         args.output_file,
     )
-    await generate(start, stop, page_size, list_id, output_file)
+    await generate(start, stop, page_size, list_id, favorite_slug, output_file)
 
 
 if __name__ == "__main__":

@@ -107,7 +107,7 @@ class LeetcodeData:
     """
 
     def __init__(
-        self, start: int, stop: int, page_size: int = 1000, list_id: str = ""
+        self, start: int, stop: int, page_size: int = 1000, list_id: str = "", favorite_slug: str = "", company_tag: str =""
     ) -> None:
         """
         Initialize leetcode API and disk cache for API responses
@@ -128,6 +128,8 @@ class LeetcodeData:
         self._stop = stop
         self._page_size = page_size
         self._list_id = list_id
+        self._favorite_slug = favorite_slug
+        self._company_tag = company_tag
 
     @cached_property
     def _api_instance(self) -> leetcode.api.default_api.DefaultApi:
@@ -146,7 +148,11 @@ class LeetcodeData:
     @retry(times=3, exceptions=(urllib3.exceptions.ProtocolError,), delay=5)
     def _get_problems_count(self) -> int:
         api_instance = self._api_instance
-
+        filters_dict = {}
+        if self._list_id:
+            filters_dict["list_id"] = self._list_id
+        if self._favorite_slug:
+            filters_dict["company_tag"] = self._favorite_slug
         graphql_request = leetcode.models.graphql_query.GraphqlQuery(
             query="""
             query problemsetQuestionList($categorySlug: String, $limit: Int, $skip: Int, $filters: QuestionListFilterInput) {
@@ -166,7 +172,7 @@ class LeetcodeData:
                 skip=0,
                 filters=leetcode.models.graphql_query_problemset_question_list_variables_filter_input.GraphqlQueryProblemsetQuestionListVariablesFilterInput(
                     tags=[],
-                    list_id=self._list_id,
+                    **filters_dict
                     # difficulty="MEDIUM",
                     # status="NOT_STARTED",
                     # list_id="7p5x763",  # Top Amazon Questions
@@ -186,6 +192,11 @@ class LeetcodeData:
         self, offset: int, page_size: int, page: int
     ) -> List[leetcode.models.graphql_question_detail.GraphqlQuestionDetail]:
         api_instance = self._api_instance
+        filters_dict = {}
+        if self._list_id:
+            filters_dict["list_id"] = self._list_id
+        if self._favorite_slug:
+            filters_dict["company_tag"] = self._favorite_slug
         graphql_request = leetcode.models.graphql_query.GraphqlQuery(
             query="""
             query problemsetQuestionList($categorySlug: String, $limit: Int, $skip: Int, $filters: QuestionListFilterInput) {
@@ -221,7 +232,7 @@ class LeetcodeData:
                 limit=page_size,
                 skip=offset + page * page_size,
                 filters=leetcode.models.graphql_query_problemset_question_list_variables_filter_input.GraphqlQueryProblemsetQuestionListVariablesFilterInput(
-                    list_id=self._list_id
+                    **filters_dict
                 ),
             ),
             operation_name="problemsetQuestionList",
