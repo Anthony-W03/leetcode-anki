@@ -148,22 +148,19 @@ class LeetcodeData:
     @retry(times=3, exceptions=(urllib3.exceptions.ProtocolError,), delay=5)
     def _get_problems_count(self) -> int:
         api_instance = self._api_instance
-        filters_dict = {}
-        if self._list_id:
-            filters_dict["list_id"] = self._list_id
-        if self._favorite_slug:
-            filters_dict["company_tag"] = self._favorite_slug
+        company = self._favorite_slug.split('-')[0] if self._favorite_slug else ""
+
         graphql_request = leetcode.models.graphql_query.GraphqlQuery(
             query="""
             query problemsetQuestionList($categorySlug: String, $limit: Int, $skip: Int, $filters: QuestionListFilterInput) {
-              problemsetQuestionList: questionList(
-                categorySlug: $categorySlug
-                limit: $limit
-                skip: $skip
-                filters: $filters
-              ) {
-                totalNum
-              }
+                problemsetQuestionList: questionList(
+                    categorySlug: $categorySlug
+                    limit: $limit
+                    skip: $skip
+                    filters: $filters
+                ) {
+                    totalNum
+                }
             }
             """,
             variables=leetcode.models.graphql_query_problemset_question_list_variables.GraphqlQueryProblemsetQuestionListVariables(
@@ -172,11 +169,8 @@ class LeetcodeData:
                 skip=0,
                 filters=leetcode.models.graphql_query_problemset_question_list_variables_filter_input.GraphqlQueryProblemsetQuestionListVariablesFilterInput(
                     tags=[],
-                    **filters_dict
-                    # difficulty="MEDIUM",
-                    # status="NOT_STARTED",
-                    # list_id="7p5x763",  # Top Amazon Questions
-                    # premium_only=False,
+                    list_id=self._list_id,
+                    companies=[company] if company else []
                 ),
             ),
             operation_name="problemsetQuestionList",
@@ -188,15 +182,11 @@ class LeetcodeData:
         return data.problemset_question_list.total_num or 0
 
     @retry(times=3, exceptions=(urllib3.exceptions.ProtocolError,), delay=5)
-    def _get_problems_data_page(
-        self, offset: int, page_size: int, page: int
-    ) -> List[leetcode.models.graphql_question_detail.GraphqlQuestionDetail]:
+    def _get_problems_data_page( self, offset: int, page_size: int, page: int) -> List[leetcode.models.graphql_question_detail.GraphqlQuestionDetail]:
         api_instance = self._api_instance
-        filters_dict = {}
-        if self._list_id:
-            filters_dict["list_id"] = self._list_id
-        if self._favorite_slug:
-            filters_dict["company_tag"] = self._favorite_slug
+
+        company = self._favorite_slug.split('-')[0] if self._favorite_slug else ""
+        
         graphql_request = leetcode.models.graphql_query.GraphqlQuery(
             query="""
             query problemsetQuestionList($categorySlug: String, $limit: Int, $skip: Int, $filters: QuestionListFilterInput) {
@@ -232,7 +222,9 @@ class LeetcodeData:
                 limit=page_size,
                 skip=offset + page * page_size,
                 filters=leetcode.models.graphql_query_problemset_question_list_variables_filter_input.GraphqlQueryProblemsetQuestionListVariablesFilterInput(
-                    **filters_dict
+                    tags=[],
+                    list_id=self._list_id,
+                    companies=[company] if company else []
                 ),
             ),
             operation_name="problemsetQuestionList",
